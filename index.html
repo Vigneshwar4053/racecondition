@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Local Buy Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 720px;
+      margin: 32px auto;
+      padding: 10px;
+      text-align: center;
+    }
+    .card {
+      border: 1px solid #ddd;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+    h2 { margin: 0; }
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .status { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🚀 Local Concurrency Buy Test</h1>
+
+  <div class="card">
+    <h2 id="productName">Loading...</h2>
+    <p>Available Quantity: <span id="quantity">0</span></p>
+    <button id="buyBtn" disabled>Buy Now</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <script>
+    // API points to your local backend
+    const API_BASE = "http://localhost:3000";
+
+    // Replace this with your actual product _id from MongoDB
+    const PRODUCT_ID = "6889b671a384a70452e18654";
+
+    const nameEl = document.getElementById("productName");
+    const qtyEl = document.getElementById("quantity");
+    const statusEl = document.getElementById("status");
+    const buyBtn = document.getElementById("buyBtn");
+
+    async function fetchProduct() {
+      const res = await fetch(`${API_BASE}/product/${PRODUCT_ID}`);
+      if (!res.ok) {
+        nameEl.textContent = "❌ Product not found!";
+        buyBtn.disabled = true;
+        return;
+      }
+      const data = await res.json();
+      nameEl.textContent = data.name;
+      qtyEl.textContent = data.quantity;
+      buyBtn.disabled = data.quantity <= 0;
+    }
+
+    async function buyProduct() {
+      statusEl.textContent = "Processing...";
+      buyBtn.disabled = true;
+
+      const res = await fetch(`${API_BASE}/buy/${PRODUCT_ID}`, {
+        method: "POST"
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        statusEl.textContent = "✅ Purchase successful!";
+        qtyEl.textContent = data.quantityLeft;
+      } else {
+        const data = await res.json();
+        statusEl.textContent = "❌ " + (data.message || "Out of stock");
+      }
+
+      setTimeout(fetchProduct, 1000); // refresh quantity
+    }
+
+    buyBtn.addEventListener("click", buyProduct);
+    fetchProduct();
+  </script>
+</body>
+</html>
